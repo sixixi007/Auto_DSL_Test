@@ -1,3 +1,0 @@
-anesthesia_id	operation_record_id	urine_volume	blood_lossed	asa_grade	surgical_position	breath_type	drug_before_anes	anes_begin_time	anes_end_time	anes_real_duation	go_after_operation	etl_time	source_id	surgical_position_code	is_fasting	fore_diag_id	fore_diag_code	fore_diag_name	intend_operation_id	intend_operation_code	intend_operation_name	during_operation_id	during_operation_code	during_operation_name	anesthesia_type_id	anesthesia_type_code	anesthesia_type_name	anesthesia_doc_id	anesthesia_doc_code	anesthesia_doc_name	is_valid	oper_time	source_app	org_code
-3	77825	1.0000	1.0000	1	1	1	1	2019-01-22 10:00:00	2019-01-22 11:10:00	1.0000	1	2019-01-22 10:00:00	1	nan	nan	nan	nan	nan	nan	nan	nan	nan	nan	nan	nan	nan	nan	nan	nan	nan	nan	nan	nan	nan
-

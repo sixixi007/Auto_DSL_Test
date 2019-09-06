@@ -1,2 +1,0 @@
-record_fragment_id	record_title	fragment_code	fragment_name	content	patient_id	visit_id	visit_type	record_id	nlp_flag	nlp_note	nlp_time	etl_time	oper_time
-12234	入院记录	nan	体格检查	左侧额颞骨术后缺损	2484472	101273089	I	213123	0	nan	2019-02-20 11:00:00	2019-05-20 11:00:00	nan

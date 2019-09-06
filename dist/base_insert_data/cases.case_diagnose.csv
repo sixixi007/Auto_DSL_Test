@@ -1,0 +1,2 @@
+case_diagnose_id	source_id	case_id	happen_no	diag_class_id	diag_class_code	diag_class_name	main_flag	diag_id	diag_code	diag_name	pathology_no	in_condition_code	in_condition_name	outcome_code	outcome_name	diag_sycode_set	oper_time	org_code	source_app	etl_time	is_valid
+1946667	B28212 -2-1	794431	1	28684	nan	其他诊断	nan	nan	I10.x00I	高血压	nan	1	有	2	好转	[]	nan	42500853400	fg_case	2018-08-27 18:23:55.829809	nan

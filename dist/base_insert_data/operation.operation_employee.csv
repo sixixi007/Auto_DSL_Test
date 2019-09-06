@@ -1,0 +1,3 @@
+operation_employee_id	source_id	operation_record_id	org_code	source_app	role_id	role_code	role_name	oper_id	oper_name	supersede_date	etl_time	oper_code	oper_time	is_valid
+130628	195116	24813	nan	nan	3334	4	洗手护士	2173	王婧虹	nan	2017-11-21 14:04:20.848469	nan	nan	nan
+

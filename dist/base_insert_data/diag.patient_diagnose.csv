@@ -1,0 +1,3 @@
+pat_diag_id	patient_id	patient_name	visit_id	visit_type	happen_no	source_pat_diag_id	diag_class_id	diag_class_code	diag_class_name	diag_id	diag_code	diag_name	diag_sycode_set	is_primary	diag_doc_id	diag_doc_code	diag_doc_name	diag_time	oper_time	org_code	source_app	etl_time	is_valid
+10834590	105292	王国强	101237930	I	nan	\x000000004ee393c1	28684	nan	其他诊断	30005	I63.801	腔隙性脑梗死	[]	nan	2939	nan	李海玲	2018-08-15 00:00:00	nan	42500853400	fg_his	2018-12-11 15:35:38.111565	nan
+

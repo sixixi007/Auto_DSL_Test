@@ -1,0 +1,2 @@
+id	patient_id	visit_type	visit_id	org_code	source_app	source_id	dept_id	dept_name	ward_id	ward_name	bed_id	bed_name	record_time	record_type_id	record_type_name	value1	unit1_std_id	unit1_name	value2	unit2_std_id	unit2_name	value_class_code	value_code_system_id	note	oper_id	oper_name	oper_time	etl_time
+159694212	1297231	I	101271733	42500853400	jy_nurse	C03586|2019-03-29 14:00:00.000|197	59	胃肠外科病房	59	胃肠外科病房	6550	12	2019-03-29 00:00:00	34110	脉搏	75	nan	次/分	nan	nan	nan	N	58	体征项目	nan	nan	2019-03-29 15:12:42.3	2019-03-29 15:22:39.472425

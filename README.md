@@ -58,7 +58,9 @@ log 会将info级别的信息都存到summary.log 文件中，每次在进行下
 
 7. 时间格式也可以通过```'2018-09-02 09:30``来实现
 
+2019/10/12
 
-
-
-
+1. 修复patient_base_info 表测试的时候，visit_id传值问题
+2. 实行patient_id分配，实现多个人同时使用
+3. 添加orders域下表的关联表的测试逻辑
+4. 添加lab.microbe_report 关联表测试逻辑

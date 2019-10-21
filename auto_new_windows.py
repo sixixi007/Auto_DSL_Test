@@ -15,15 +15,17 @@ from logging import handlers
 
 
 class AutoDSL(object):
+    def __init__(self):
+        self.summary_result_list = list()
 
-    def get_csv_content(self):
+    def get_csv_content(self, patient_id):
         """存入CSV文件"""
-        patient_id = 1000000
         book = xlrd.open_workbook("./data.xlsx")
         sheet_name_list = book.sheet_names()
         if not os.path.exists('./new_insert_data'):
             os.mkdir('./new_insert_data')
         for sheet_name in sheet_name_list:
+            sheet_summary_dict = dict()
             log.logger.info(f"sheet的名字是 {sheet_name}")
             if sheet_name == 'bugs':
                 continue
@@ -48,67 +50,116 @@ class AutoDSL(object):
             log.logger.info(f"落库变量为{var_table_field_value}")
             # 人工判断
             people_index = first_row_list.index("期望值")
+            # log.logger.info(f"期望值列号：{people_index}")
             # 获取表名和字段名
             table_field_list = first_row_list[:var_index]
             table_name_list = [".".join(table_name.split(".")[:-1]) for table_name in table_field_list]
             field_name_list = [table_name.split(".")[-1] for table_name in table_field_list]
             # 判断表名和字段名
             set_table_name_list = list(set(table_name_list))
-            all_info_list = self.table_field_value(var_index, sheet_name, table_name_list, field_name_list)
-            if len(set_table_name_list) == 1:
-                file = table_name_list[0] + '.csv'
-                # print("file:", file)
-                shutil.copyfile(src_path + "/" + file, dst_path + "/" + file)
-                # 一个sheet 一个表
-                self.same_table_insert(table_name_list, field_name_list, all_info_list, visit_record_values_list,
-                                       patient_id)
-                # 如果当前表是正是visit_record表，则不做visit_record表的增加操作
-                if table_name_list[0] != "visit.visit_record":
-                    shutil.copyfile(visit_record_path, dst_path + "/" + visit_record_path)
-                    self.add_visit_record(patient_id, visit_record_values_list, visit_record_field)
-                if table_name_list[0] == "visit.visit_record":
-                    # 如果是visit_record表则将id 改成visit_id
-                    self.modify_visit_record_id("visit.visit_record")
-                # 修改case_id的值
-                # 在case_base表中添加case_id 以及patient_id,visit_id
-                if table_name_list[0] == "cases.case_diagnose":
-                    shutil.copyfile(f'{src_path}/cases.case_base.csv', f'{dst_path}/cases.case_base.csv')
-                    case_id_list = self.modify_case_id()
-                    self.add_case_base_id(patient_id, case_id_list, visit_record_values_list)
-            elif len(set_table_name_list) == 2:
-                for file in set_table_name_list:
-                    file_csv = file + '.csv'
-                    shutil.copyfile(src_path + "/" + file_csv, dst_path + "/" + file_csv)
-                # 一个sheet 不同的表
-                self.diff_table_insert(all_info_list, patient_id, visit_record_values_list)
-                if "visit.visit_record" not in set_table_name_list:
-                    shutil.copyfile(visit_record_path, dst_path + "/" + visit_record_path)
-                    self.add_visit_record(patient_id, visit_record_values_list, visit_record_field)
-                if "visit.visit_record" in set_table_name_list:
-                    self.modify_visit_record_id("visit.visit_record")
-                if "cases.case_diagnose" in set_table_name_list:
-                    shutil.copyfile(f'{src_path}/cases.case_base.csv', f'{dst_path}/cases.case_base.csv')
-                    case_id_list = self.modify_case_id()
-                    self.add_case_base_id(patient_id, case_id_list, visit_record_values_list)
+            try:
+                all_info_list = self.table_field_value(var_index, sheet_name, table_name_list, field_name_list)
+                if len(set_table_name_list) == 1:
+                    file = table_name_list[0] + '.csv'
+                    # print("file:", file)
+                    shutil.copyfile(src_path + "/" + file, dst_path + "/" + file)
+                    # 一个sheet 一个表
+                    self.same_table_insert(table_name_list, field_name_list, all_info_list, visit_record_values_list,
+                                           patient_id, sheet_name)
+                    # 如果当前表是正是visit_record表，则不做visit_record表的增加操作
+                    if table_name_list[0] != "visit.visit_record":
+                        shutil.copyfile(visit_record_path, dst_path + "/" + visit_record_path)
+                        self.add_visit_record(patient_id, visit_record_values_list, visit_record_field)
+                    if table_name_list[0] == "visit.visit_record":
+                        # 如果是visit_record表则将id 改成visit_id
+                        self.modify_visit_record_id("visit.visit_record")
+                    # 修改case_id的值
+                    # 在case_base表中添加case_id 以及patient_id,visit_id
+                    if table_name_list[0] == "cases.case_diagnose":
+                        shutil.copyfile(f'{src_path}/cases.case_base.csv', f'{dst_path}/cases.case_base.csv')
+                        case_id_list = self.modify_case_id()
+                        self.add_case_base_id(patient_id, case_id_list, visit_record_values_list)
+                    if table_name_list[0] == "lab.lab_report_result":
+                        self.add_lab_report_table(sheet_name)
+                elif len(set_table_name_list) == 2:
+                    for file in set_table_name_list:
+                        file_csv = file + '.csv'
+                        shutil.copyfile(src_path + "/" + file_csv, dst_path + "/" + file_csv)
+                    # 一个sheet 不同的表
+                    self.diff_table_insert(all_info_list, patient_id, visit_record_values_list)
+                    if "visit.visit_record" not in set_table_name_list:
+                        shutil.copyfile(visit_record_path, dst_path + "/" + visit_record_path)
+                        self.add_visit_record(patient_id, visit_record_values_list, visit_record_field)
+                    if "visit.visit_record" in set_table_name_list:
+                        self.modify_visit_record_id("visit.visit_record")
 
-            # 导入数据库
-            self.insert_db()
-            # 调用api 验证
-            error_index_dict, error_rate = self.call_api_trigger(var_table_field_value,
-                                                                 rows, people_index, sheet)
-            for k, v in error_index_dict.items():
-                # print("sheet为:{},表为:{},出错的行:{},出错率:{}".format(sheet_name, k, v, error_rate))
-                log.logger.info(f"sheet为:{sheet_name},表为:{k},出错的行:{v},出错率:{error_rate}")
-            # 从数据库将数据删除
-            self.delete_table_data(set_table_name_list, patient_id)
-            # 将csv 文件移入已处理的文件夹中
-            rm_file_list = os.listdir(dst_path)
-            log.logger.info(f"移出的文件列表为：{rm_file_list}")
-            # 移出
-            for rm_file in rm_file_list:
-                os.remove("{}/{}".format(dst_path, rm_file))
-            log.logger.info(f"============={sheet_name}结束，下一个落库变量测试开始===============")
+                    if "cases.case_diagnose" in set_table_name_list:
+                        shutil.copyfile(f'{src_path}/cases.case_base.csv', f'{dst_path}/cases.case_base.csv')
+                        case_id_list = self.modify_case_id()
+                        self.add_case_base_id(patient_id, case_id_list, visit_record_values_list)
+
+                # 导入数据库
+                self.insert_db()
+                # 当插入数据较多的时候，需要sleep
+                time.sleep(1)
+                # 调用api 验证
+                error_index_dict, error_rate = self.call_api_trigger(var_table_field_value,
+                                                                     rows, people_index, sheet, sheet_name)
+                for k, v in error_index_dict.items():
+                    sheet_summary_dict[sheet_name] = [v, error_rate]
+                    self.summary_result_list.append(sheet_summary_dict)
+                    log.logger.info(f"sheet为:{sheet_name},出错的行:{v},出错率:{error_rate}")
+                # 从数据库将数据删除
+                self.delete_table_data(set_table_name_list, patient_id)
+                # 将csv 文件移入已处理的文件夹中
+                rm_file_list = os.listdir(dst_path)
+                log.logger.info(f"移出的文件列表为：{rm_file_list}")
+                # 移出
+                for rm_file in rm_file_list:
+                    os.remove("{}/{}".format(dst_path, rm_file))
+                log.logger.info(f"============={sheet_name}结束，下一个落库变量测试开始===============")
+            except Exception as e:
+                print(str(e))
+                log.logger.info(f"============={sheet_name}测试异常退出，下一个落库变量测试开始===============")
+                self.delete_table_data(set_table_name_list, patient_id)
+        with open(f'./summary_result.json', 'w', encoding='utf-8', newline='') as summary_file:
+            json.dump(self.summary_result_list, summary_file)
         log.logger.info("*********************测试结束*********************")
+
+    def add_lab_report_table(self, sheet_name):
+        """增加lab_report表"""
+        shutil.copyfile(src_path + "/" + "lab.lab_report.csv", dst_path + "/" + "lab.lab_report.csv")
+        # 读取visit_record 中有几条数据
+        visit_all_value_list = self.excel_one_line_to_list(sheet_name, -1)
+        # 将visit_record中的patient_id,visit_id 插入到lab_report表中
+        lab_report_k, lab_report_v = self.read_csv('lab.lab_report')
+        lab_all_value_list = list()
+        lab_all_value_list.append(lab_report_k)
+        if patient_id == 1000000:
+            report_id = 10
+        if patient_id == 2000000:
+            report_id = 110
+        if patient_id == 3000000:
+            report_id = 220
+        if patient_id == 4000000:
+            report_id = 330
+        if patient_id == 5000000:
+            report_id = 440
+        lab_report_v[1] = patient_id
+        for visit_record_id in visit_all_value_list:
+            lab_report_v[lab_report_k.index("report_id")] = report_id
+            report_id += 1
+            lab_report_v[lab_report_k.index("visit_id")] = visit_record_id
+            lab_report_v_d = copy.deepcopy(lab_report_v)
+            lab_all_value_list.append(lab_report_v_d)
+        with open(f'{dst_path}/lab.lab_report.csv', 'w', encoding='utf-8', newline='') as lab_report_file:
+            for all_v in lab_all_value_list:
+                if any(all_v):
+                    ww = csv.writer(lab_report_file, delimiter='\t')
+                    ww.writerow(all_v)
+        # 修改report_result中的id
+        self.modify_report_id_diff("lab.lab_report_result.csv")
+
 
     def modify_case_id(self):
         """修改case_id"""
@@ -160,55 +211,38 @@ class AutoDSL(object):
                         ww = csv.writer(f, delimiter='\t')
                         ww.writerow(all_v)
 
-    def call_api_trigger(self, var_table_field_value, rows, people_index, sheet):
+    def call_api_trigger(self, var_table_field_value, rows, people_index, sheet, sheet_name):
         """调用api获取trigger_id"""
         # 获取patinet_id, visit_id, inpat_id
         file_list = os.listdir(dst_path)
         log.logger.info(f"文件列表是:{file_list}")
-        if len(file_list) == 1 and file_list[0] == visit_record_path:
-            file = file_list[0]
-        else:
-            file_list.remove(visit_record_path)
-        if "lab.lab_report_result.csv" in file_list:
-            file_list.remove("lab.lab_report_result.csv")
-        if len(file_list) != 1:
-            file = file_list[0]
-        file = file_list[0]
-        # print("file_list:", file_list)
         error_index_dict = dict()
-        path = "{}/{}".format(dst_path, file)
-        visit_id_list = list()
-        patient_id = ""
-        with open(path, 'r', encoding='utf-8', newline='') as csv_file:
-            reader = csv.DictReader(csv_file, delimiter='\t')
-            for row in reader:
-                if "patient_id" in row.keys():
-                    patient_id = row["patient_id"]
-                if "visit_id" in row.keys():
-                    visit_id_list.append(row["visit_id"])
-                elif "inpat_id" in row.keys():
-                    visit_id_list.append(row["inpat_id"])
+        visit_id_list = [str(int(sheet.cell(c, 0).value)) for c in range(1, rows)]
+        print("excel中的visit_id_list:", visit_id_list)
         # 获取trigger_id_list
         trigger_id_list = list()
         for visit_id in visit_id_list:
             url = "http://172.16.127.101:37125/api/Trigger"
             data_dict = [{"patientId": patient_id, "visitId": visit_id}]
-            # print("data_dict:",data_dict)
+            if tag:
+                data_dict = [{"patientId": patient_id, "visitId": visit_id, "tag": tag}]
+                # print("data_dict:",data_dict)
             data = json.dumps(data_dict)
+            log.logger.info(f"POST请求参数：{data}")
             header = {"Content-Type": "application/json-patch+json"}
             response = requests.post(url, data=data, headers=header)
             content = response.text
             # print(content)
             content_dict = json.loads(content)
-            print("trigger_id_eval:", content_dict.get("data"))
             trigger_id = eval(content_dict.get("data"))[0]
             log.logger.info(f"trigger_id:{trigger_id}")
             trigger_id_list.append(trigger_id)
         # 根据trigger_id_list 去获取落库变量对应的值
         error_index_list, error_rate = self.verify_hope_to_db_value(trigger_id_list, var_table_field_value,
                                                                     rows, people_index, sheet)
-        error_index_dict[file] = error_index_list
+        error_index_dict[sheet_name] = error_index_list
         return error_index_dict, error_rate
+
 
     def verify_hope_to_db_value(self, trigger_id_list, var_table_field_value, rows, people_index, sheet):
         """根据trigger_id_list 验证true和false"""
@@ -303,7 +337,8 @@ class AutoDSL(object):
         conn.close()
         return var_db_value
 
-    def same_table_insert(self, table_name_list, field_name_list, all_info_list, visit_record_values_list, patient_id):
+    def same_table_insert(self, table_name_list, field_name_list, all_info_list,
+                          visit_record_values_list, patient_id, sheet_name):
         """相同表插入数据"""
         # 读取base中的字段 和 值
         base_key_list, base_value_list = self.read_csv(table_name_list[0])
@@ -325,15 +360,27 @@ class AutoDSL(object):
                 self.manage_csv(all_info_list, all_value_list, field_name_index, base_key_list, field_name,
                                 visit_id_index,
                                 visit_record_values_list)
-
         # 将all_value_list 写入csv文件中
         # print("all_value_list:", all_value_list)
-        with open("./{}/{}.csv".format(dst_path, table_name_list[0]), 'a+', encoding='utf-8', newline='') as csv_file:
+        with open("./{}/{}.csv".format(dst_path, table_name_list[0]), 'a+', encoding='utf-8',
+                  newline='') as csv_file:
             for all_v in all_value_list:
                 if any(all_v):
                     w = csv.writer(csv_file, delimiter='\t')
                     w.writerow(all_v)
-        # 修改主键值　todo:并不知道是否可以去掉主键
+
+        # # 修改主键值　todo:并不知道是否可以去掉主键
+        if table_name_list[0] == "visit.inpat_record":
+            with open("{}/{}".format(dst_path, "visit.inpat_record.csv"), 'r', encoding='utf-8',
+                      newline='') as visit_file:
+                r = csv.reader(visit_file, delimiter='\t')
+                rows = [row for row in r if any(row)]
+                del rows[1]
+                with open("{}/{}".format(dst_path, "visit.inpat_record.csv"), 'w', encoding='utf-8', newline='') as f:
+                    for all_v in rows:
+                        if any(all_v):
+                            ww = csv.writer(f, delimiter='\t')
+                            ww.writerow(all_v)
         if table_name_list[0] != "visit.inpat_record":
             self.modify_table_id(table_name_list[0] + ".csv")
         return all_value_list
@@ -376,7 +423,7 @@ class AutoDSL(object):
         if base_info.get("table") != "visit.inpat_record":
             self.modify_table_id(base_info.get("table") + ".csv")
         if base_info.get("table") == "lab.lab_report_result":
-            self.modify_report_id(base_info.get("table") + ".csv")
+            self.modify_report_id_diff(base_info.get("table") + ".csv")
         # diff 另一个表
         # print("diff_t_dict_list", diff_t_dict_list)
         diff_t_key_list, diff_t_value_list = self.read_csv(diff_t_dict_list[0].get("table"))
@@ -405,15 +452,24 @@ class AutoDSL(object):
         if diff_t_dict_list[0].get("table") != "visit.inpat_record":
             self.modify_table_id(diff_t_dict_list[0].get("table") + ".csv")
         if diff_t_dict_list[0].get("table") == "lab.lab_report_result":
-            self.modify_report_id(diff_t_dict_list[0].get("table") + ".csv")
+            self.modify_report_id_diff(diff_t_dict_list[0].get("table") + ".csv")
 
-    def modify_report_id(self, file):
-        """修改report_id"""
+    def modify_report_id_diff(self, file):
+        """包含report_result, report表"""
         path = "{}/{}".format(dst_path, file)
         with open(path, 'r', encoding='utf-8', newline='') as f:
             r = csv.reader(f, delimiter='\t')
             rows = [row for row in r if any(row)]
-            i = 10
+            if patient_id == 1000000:
+                i = 10
+            if patient_id == 2000000:
+                i = 110
+            if patient_id == 3000000:
+                i = 220
+            if patient_id == 4000000:
+                i = 330
+            if patient_id == 5000000:
+                i = 440
             for index, data_li in enumerate(rows):
                 if index == 0:
                     continue
@@ -533,24 +589,31 @@ class AutoDSL(object):
     def delete_table_data(self, set_table_name_list, patient_id):
         """将一个sheet导入的数据删除"""
         # 删除导入数据的表
+        log.logger.info("正在删除，请稍后...")
         # 删除visit_record 表
-        conn = psycopg2.connect(database="", user="sixixi", password="", host="",
+        conn = psycopg2.connect(database="", user="", password="", host="",
                                 port=5432)
         cursor = conn.cursor()
         if "lab.lab_report_result" in set_table_name_list:
             report_id_list = list()
-            with open("{}/{}.csv".format(dst_path, "lab.lab_report"), 'r', encoding='utf-8', newline='') as csvfile:
+            with open("{}/{}.csv".format(dst_path, "lab.lab_report_result"), 'r', encoding='utf-8', newline='') as csvfile:
                 r = csv.reader(csvfile, delimiter='\t')
                 rows = [row for row in r if any(row)]
                 for index, data_li in enumerate(rows):
                     if index == 0:
                         continue
-                    report_id_list.append(data_li[0])
+                    report_id_list.append(data_li[1])
+            real_report_list = set(report_id_list)
             log.logger.info("要删除的report_id列表为: %s" % report_id_list)
-            for report_id in report_id_list:
+            for report_id in real_report_list:
                 try:
-                    delete_sql = "delete from {} where report_id in ('{}');".format("lab.lab_report_result", report_id)
-                    cursor.execute(delete_sql)
+                    delete_sql_result = "delete from {} where report_id in ('{}');".format("lab.lab_report_result", report_id)
+                    delete_sql_report = "delete from {} where report_id in ('{}');".format("lab.lab_report", report_id)
+                    cursor.execute(delete_sql_result)
+                    time.sleep(1.5)
+                    conn.commit()
+                    time.sleep(1)
+                    cursor.execute(delete_sql_report)
                     time.sleep(1.5)
                     conn.commit()
                     time.sleep(1)
@@ -559,6 +622,8 @@ class AutoDSL(object):
                     conn.rollback()
                     time.sleep(1)
             set_table_name_list.remove("lab.lab_report_result")
+            if "lab.lab_report" in set_table_name_list:
+                set_table_name_list.remove("lab.lab_report")
         if "cases.case_diagnose" in set_table_name_list:
             case_id_list = list()
             with open("{}/{}.csv".format(dst_path, "cases.case_base"), 'r', encoding='utf-8', newline='') as csvfile:
@@ -618,7 +683,16 @@ class AutoDSL(object):
             r = csv.reader(f, delimiter='\t')
             rows = [row for row in r if any(row)]
             del rows[1]
-            i = 10
+            if patient_id == 1000000:
+                i = 10
+            if patient_id == 2000000:
+                i = 110
+            if patient_id == 3000000:
+                i = 220
+            if patient_id == 4000000:
+                i = 330
+            if patient_id == 5000000:
+                i = 440
             for index, data_li in enumerate(rows):
                 if index == 0:
                     continue
@@ -820,7 +894,9 @@ if __name__ == '__main__':
     continue_test = continue_test.lower()
     if continue_test == 'y' or continue_test == 'yes':
         log.logger.info("*******************测试开始*******************")
+        patient_id = int(input("请输入你被分配到的patient_id：\n"))
+        tag = input("请输入此次的task的tag,如果不输入，默认全部：")
         auto_dsl = AutoDSL()
-        auto_dsl.get_csv_content()
+        auto_dsl.get_csv_content(patient_id)
     else:
         log.logger.info("*******************测试未执行 结束*******************")
